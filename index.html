@@ -5,7 +5,7 @@ header{background:#0b4f6c;color:#fff;padding:14px 16px}h1{margin:0;font-size:1.2
 label{display:block;margin:10px 0 4px;font-weight:600}.hint{font-weight:400;color:#5a6672;font-size:.85rem}
 input[type=number],select{width:100%;padding:12px;font-size:1rem;border:1px solid #c8d0d8;border-radius:10px}
 .opt{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid #c8d0d8;border-radius:10px;margin:6px 0;font-weight:500}
-.opt input{width:20px;height:20px}.nav{display:flex;gap:10px;margin-top:14px}
+label.opt input{width:20px;height:20px;flex-shrink:0}.panel{display:block;padding:12px;border:1px solid #c8d0d8;border-radius:10px;margin:6px 0}.nav{display:flex;gap:10px;margin-top:14px}
 button{flex:1;padding:14px;font-size:1rem;border:0;border-radius:10px;background:#0b4f6c;color:#fff}button.sec{background:#dde4ea;color:#1b2430}
 .link{background:none;color:#0b4f6c;padding:0;text-decoration:underline;font-size:inherit}
 .steps{color:#5a6672;font-size:.85rem;margin-bottom:6px}.big{font-size:1.8rem;font-weight:800}
@@ -155,7 +155,7 @@ const STEPS = [
       TYPES.map(([k, l]) => `<label class="opt"><input type="checkbox" data-type="${k}" ${has(k) ? 'checked' : ''}>${l}</label>`).join('') },
   { t: 'Tax year', q: () => `<label>Which tax year?</label><select data-k="year"><option value="2026/27" ${S.d.year === '2026/27' ? 'selected' : ''}>2026/27 — current year, projection (6 Apr 2026 – 5 Apr 2027)</option><option value="2025/26" ${S.d.year === '2025/26' ? 'selected' : ''}>2025/26 — last year, return due 31 Jan 2027</option><option value="2024/25" ${S.d.year === '2024/25' ? 'selected' : ''}>2024/25 — two years ago</option></select><p class="hint">Uses rates for England, Wales and Northern Ireland. Scottish income tax rates are not covered.</p>` },
   { t: 'Your income this tax year', q: () => [
-      `<div class="opt" style="display:block"><label style="margin-top:0">Your figures cover… <span class="hint">only know the year so far? We project to 12 months (e.g. 5 months × 12/5)</span></label><select data-k="ytdMonths">${Array.from({ length: 12 }, (_, i) => 12 - i).map(m => `<option value="${m}" ${String(S.d.ytdMonths || 12) === String(m) ? 'selected' : ''}>${m === 12 ? 'The full tax year' : m + ' month' + (m > 1 ? 's' : '') + ' so far (year to date)'}</option>`).join('')}</select></div>`,
+      `<div class="panel"><label style="margin-top:0">Your figures cover… <span class="hint">only know the year so far? We project to 12 months (e.g. 5 months × 12/5)</span></label><select data-k="ytdMonths">${Array.from({ length: 12 }, (_, i) => 12 - i).map(m => `<option value="${m}" ${String(S.d.ytdMonths || 12) === String(m) ? 'selected' : ''}>${m === 12 ? 'The full tax year' : m + ' month' + (m > 1 ? 's' : '') + ' so far (year to date)'}</option>`).join('')}</select></div>`,
       has('taxi') && taxiGuide(),
       has('taxi') && tick('blackCab', 'I drive a black cab / hackney carriage (purpose-built taxi)'),
       has('taxi') && driver(),
@@ -167,6 +167,7 @@ const STEPS = [
       !has('investor') && num('savings', 'Bank/savings interest', 'gross interest this year'),
     ].filter(Boolean).join('') || '<p>Go back and pick at least one way you earn.</p>' },
   { t: 'Your costs', show: () => self() || has('paye'), q: () => [
+      has('taxi') && '<p class="hint"><b>Enter your allowable costs below.</b> Type in the total box, or open <b>Add up allowable expenses</b> for platform fees, licence, parking and more. Mileage is optional — you can use it instead of fuel/repairs for the car, and still add parking, tolls, licence and phone.</p>',
       self() && tick('useMileage', `Use HMRC simplified mileage for a car/van (${Math.round(TaxCalc.YEARS[S.d.year || '2026/27'].mile[0] * 100)}p a mile for the first 10,000 business miles, 25p after) instead of actual vehicle costs`) + num('miles', 'Business miles this year (if using mileage)', '— keep a log; home to a regular workplace does not count. If you use mileage, leave fuel, insurance and repairs for that vehicle out of your expenses.' + (has('taxi') && S.d.blackCab ? ' Black cabs cannot use mileage — enter actual costs instead.' : ''), !!S.d.useMileage),
       self() && `<p class="hint"><b>Allowable expenses</b> are the day-to-day costs of running your business. They are <b>deducted from your turnover</b> to give your taxable profit, so you only pay tax and NI on the profit. Only business costs count — not personal spending (for mixed use, claim just the business share). GOV.UK calls these “allowable expenses” (search “expenses if you're self-employed”).</p>`,
       self() && num('selfExpenses', has('taxi') ? 'Total allowable expenses — deducted from fares' : has('cis') ? 'Total allowable expenses — deducted from CIS income' : 'Total allowable expenses — deducted from turnover', has('taxi') ? 'fuel, insurance, licence, repairs — or mileage at 45p/25p' : has('cis') ? 'materials, tools, van, phone' : 'e.g. office/phone, travel, stock, insurance, accountant, marketing, tools. If your expenses are under £1,000 we automatically use the £1,000 trading allowance instead when that is better.') + expenses(),
@@ -189,7 +190,7 @@ const STEPS = [
 const inputs = () => TaxCalc.pick(S.types, S.d);
 // Optional helper: hourly pay + overtime -> annual gross salary
 const hv = k => S.d[k] ?? '';
-const hourly = () => `<details class="opt" style="display:block" ${hv('hr') ? 'open' : ''}><summary><b>Paid hourly? Work it out</b></summary>
+const hourly = () => `<details class="panel" ${hv('hr') ? 'open' : ''}><summary><b>Paid hourly? Work it out</b></summary>
   <label>Hourly rate (£)</label><input type="number" inputmode="decimal" data-k="hr" value="${hv('hr')}" placeholder="e.g. 12.21">
   <label>Normal hours per week</label><input type="number" inputmode="decimal" data-k="hrs" value="${hv('hrs')}" placeholder="e.g. 37.5">
   <label>Overtime hours per week <span class="hint">(average, optional)</span></label><input type="number" inputmode="decimal" data-k="oth" value="${hv('oth')}" placeholder="0">
@@ -197,12 +198,14 @@ const hourly = () => `<details class="opt" style="display:block" ${hv('hr') ? 'o
   <label>Weeks paid per year <span class="hint">(52 includes paid holiday)</span></label><input type="number" inputmode="decimal" data-k="wks" value="${hv('wks') || 52}">
   <p class="hint" id="hrout"></p></details>`;
 // Optional helper: add up allowable expense categories -> selfExpenses (raw, not scaled separately)
-const EXK = [['exOffice', 'Office costs', 'phone, internet, software, stationery'], ['exTravel', 'Travel and vehicle', 'public transport, parking; fuel/repairs only if NOT using the mileage rate'],
+const EXK_BASE = [['exOffice', 'Office costs', 'phone, internet, software, stationery'], ['exTravel', 'Travel and vehicle', 'public transport, parking; fuel/repairs only if NOT using the mileage rate'],
   ['exStock', 'Stock / materials / goods for resale', ''], ['exStaff', 'Staff / subcontractors you pay', ''], ['exPremises', 'Premises / workspace rent and utilities', 'business share only'],
-  ['exFinance', 'Insurance, bank and finance charges', ''], ['exMarketing', 'Marketing and advertising', ''], ['exFees', 'Accountancy / professional fees', ''], ['exOther', 'Other allowable business costs', 'e.g. tools and small equipment, platform/app fees, uniforms/protective clothing, training to update existing skills, trade subscriptions, business share of home running costs (or £10–£26/month flat rate)']];
-const expenses = () => `<details class="opt" style="display:block" ${EXK.some(([k]) => hv(k)) || hv('homeHrs') ? 'open' : ''}><summary><b>Add up allowable expenses</b></summary>
+  ['exFinance', 'Insurance, bank and finance charges', ''], ['exMarketing', 'Marketing and advertising', ''], ['exFees', 'Accountancy / professional fees', ''], ['exOther', 'Other allowable business costs', 'e.g. tools, uniforms/protective clothing, training, trade subscriptions']];
+const EXK_TAXI = [['exPlatform', 'Platform / operator fees', 'Uber, Bolt, radio circuit — usually a % of fares'], ['exFuel', 'Fuel and vehicle running costs', 'only if you are NOT using HMRC mileage for that car'], ['exInsLic', 'Insurance and taxi/PHV licence', 'vehicle insurance, badge, licence fees'], ['exParkToll', 'Parking, tolls and congestion charge', 'can be claimed even if you use mileage'], ['exPhone', 'Phone and device for jobs', 'business share'], ['exClean', 'Cleaning and hygiene', ''], ['exFees', 'Accountancy / professional fees', ''], ['exOther', 'Other allowable driver costs', 'e.g. tip fees, charging (EV), equipment']];
+const EXK = () => has('taxi') ? EXK_TAXI : EXK_BASE;
+const expenses = () => `<details class="panel" ${EXK().some(([k]) => hv(k)) || hv('homeHrs') || has('taxi') ? 'open' : ''}><summary><b>${has('taxi') ? 'Add up taxi / driver expenses' : 'Add up allowable expenses'}</b></summary>
   <p class="hint">Fill any that apply for the same period as your turnover — the total box above is updated. Not allowable: personal costs, fines, entertaining clients, your own wages/drawings, loan repayments (interest only is allowed). Larger equipment/vans are usually claimed via capital allowances — include their cost here for a rough estimate.</p>
-  ${EXK.map(([k, l, h]) => `<label>${l}${h ? ` <span class="hint">${h}</span>` : ''}</label><input type="number" inputmode="decimal" data-k="${k}" value="${hv(k)}" placeholder="0">`).join('')}
+  ${EXK().map(([k, l, h]) => `<label>${l}${h ? ` <span class="hint">${h}</span>` : ''}</label><input type="number" inputmode="decimal" data-k="${k}" value="${hv(k)}" placeholder="0">`).join('')}
   <label>Working from home — hours a month <span class="hint">GOV.UK simplified flat rate: 25–50 hrs £10, 51–100 hrs £18, 101+ hrs £26 a month. Use this OR the business share of actual home bills in Premises — not both.</span></label><select data-k="homeHrs">${[['', 'Not claiming'], ['10', '25 to 50 hours'], ['18', '51 to 100 hours'], ['26', '101 hours or more']].map(([v, l]) => `<option value="${v}" ${String(hv('homeHrs')) === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
   <label>Months worked from home this way</label><input type="number" inputmode="decimal" data-k="homeMonths" value="${hv('homeMonths')}" placeholder="12">
   <p class="hint" id="exout"></p></details>`;
@@ -212,9 +215,9 @@ function expLine() {
   out.innerHTML = `Turnover ${gbp(r.turnover)} − ${r.usedTradingAllowance ? `trading allowance ${gbp(r.expensesClaimed)} (beats your expenses of ${gbp(r.expensesEntered)})` : `expenses ${gbp(r.expensesClaimed)}${r.mileageClaim ? ` (incl. mileage ${gbp(r.mileageClaim)})` : ''}${r.capClaimed ? ` − capital allowances ${gbp(r.capClaimed)}` : ''}`} → taxable profit <b>${gbp(r.tradeProfit)}</b>${(+S.d.ytdMonths || 12) < 12 ? ' (full-year projection)' : ''}`;
 }
 function applyExpenses(k) {
-  if (!EXK.some(([x]) => x === k) && k !== 'homeHrs' && k !== 'homeMonths') return;
+  if (!EXK().some(([x]) => x === k) && k !== 'homeHrs' && k !== 'homeMonths') return;
   const home = (+S.d.homeHrs || 0) * (S.d.homeMonths === undefined || S.d.homeMonths === '' ? 12 : Math.min(12, +S.d.homeMonths || 0));
-  const total = Math.round((EXK.reduce((s, [x]) => s + (+S.d[x] || 0), 0) + home) * 100) / 100;
+  const total = Math.round((EXK().reduce((s, [x]) => s + (+S.d[x] || 0), 0) + home) * 100) / 100;
   S.d.selfExpenses = String(total); const el = document.querySelector('[data-k=selfExpenses]'); if (el) el.value = total;
 }
 function applyHourly(k) {
@@ -227,7 +230,7 @@ function applyHourly(k) {
   if (out) out.textContent = `= ${gbp(total)} a year (£${n('hr')} × ${n('hrs')} hrs${n('oth') ? ` + ${n('oth')} overtime hrs × ${m}` : ''} × ${wks} weeks). Salary box updated.`;
 }
 const taxiGuide = () => { const y = S.d.year || '2026/27', mr = TaxCalc.YEARS[y].mile;
-  return `<details class="opt" style="display:block"><summary><b>Taxi / private hire / delivery: what counts (${y})</b></summary><ul class="hint" style="margin:6px 0">
+  return `<details class="panel"><summary><b>Taxi / private hire / delivery: what counts (${y})</b></summary><ul class="hint" style="margin:6px 0">
   <li><b>Income</b> = everything riders/customers paid for your trips, before the app/operator fee. Your platform's annual tax summary shows it.</li>
   <li><b>Fees</b> to Uber, Bolt, an operator or a radio circuit are an allowable cost.</li>
   <li><b>Car costs — pick one method per car:</b> actual costs (fuel, insurance, repairs, plus capital allowances for the car) <i>or</i> HMRC mileage: ${Math.round(mr[0] * 100)}p a mile for the first 10,000 business miles, then 25p${y === '2026/27' ? ' (raised from 45p for 2026/27)' : ''}. Once you choose one for a car, you keep it until you change the car. Parking, tolls and congestion charges can be added on top.</li>
@@ -238,7 +241,7 @@ const taxiGuide = () => { const y = S.d.year || '2026/27', mr = TaxCalc.YEARS[y]
   <li><b>Making Tax Digital:</b> needed if your turnover was over £50,000 in 2024/25 (from April 2026), over £30,000 in 2025/26 (from April 2027), or over £20,000 in 2026/27 (from April 2028).</li></ul>
   <a href="https://www.gov.uk/simpler-income-tax-simplified-expenses/vehicles" target="_blank" rel="noopener">GOV.UK: mileage rates</a> · <a href="https://www.gov.uk/guidance/complete-a-tax-check-for-a-taxi-private-hire-or-scrap-metal-licence" target="_blank" rel="noopener">Licence tax check</a></details>`; };
 // Optional helper for taxi / delivery drivers: project the year from a typical week
-const driver = () => `<details class="opt" style="display:block" ${hv('dwk') ? 'open' : ''}><summary><b>Driver? Project your year from a typical week</b></summary>
+const driver = () => `<details class="panel" ${hv('dwk') ? 'open' : ''}><summary><b>Driver? Project your year from a typical week</b></summary>
   <label>Average weekly earnings (£) <span class="hint">gross fares/fees before platform cut — see your app's weekly statements</span></label><input type="number" inputmode="decimal" data-k="dwk" value="${hv('dwk')}" placeholder="e.g. 700">
   <label>Weeks you expect to work in the whole tax year <span class="hint">52 minus holidays/time off</span></label><input type="number" inputmode="decimal" data-k="dweeks" value="${hv('dweeks') || 48}">
   <label>Platform / operator fee % <span class="hint">e.g. Uber ~25%; 0 if none</span></label><input type="number" inputmode="decimal" data-k="dfee" value="${hv('dfee')}" placeholder="0">
